@@ -34,13 +34,13 @@ class Layer:
         for neuron in self.neurons:
             y = neuron.forward(x)
             output += y # output.append(y[0])
-        # ReLU
-        output_activated = list()
-        for y in output:
-            if y > 0:
-                output_activated.append(y)
-            else:
-                output_activated.append(0)
+        # # ReLU
+        # output_activated = list()
+        # for y in output:
+        #     if y > 0:
+        #         output_activated.append(y)
+        #     else:
+        #         output_activated.append(0)
         # Sigmoid
         output_activated = list()
         for y in output:

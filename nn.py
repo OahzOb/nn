@@ -108,16 +108,15 @@ class Layer:
 class Network:
     def __init__(self):
         self.Layers = list()
-        # self.Layers.append(Layer(input_size=1, output_size=64))
-        # self.Layers.append(Layer(input_size=64, output_size=128))
+        # self.Layers.append(Layer(input_size=1, output_size=64, activation='ReLU'))
+        # self.Layers.append(Layer(input_size=64, output_size=128, activation='ReLU'))
         # self.Layers.append(Layer(input_size=128, output_size=1024, activation='ReLU'))
-        # self.Layers.append(Layer(input_size=1024, output_size=128, activation='ReLU'))
+        # self.Layers.append(Layer(input_size=1024, output_size=128, activation='Sigmoid'))
         # self.Layers.append(Layer(input_size=128, output_size=1, activation='none'))
-
-        self.Layers.append(Layer(input_size=1, output_size=16, activation='ReLU'))
-        self.Layers.append(Layer(input_size=16, output_size=128, activation='ReLU'))
-        self.Layers.append(Layer(input_size=128, output_size=16, activation='ReLU'))
-        self.Layers.append(Layer(input_size=16, output_size=1, activation='none'))
+        #
+        self.Layers.append(Layer(input_size=1, output_size=128, activation='ReLU'))
+        self.Layers.append(Layer(input_size=128, output_size=128, activation='ReLU'))
+        self.Layers.append(Layer(input_size=128, output_size=1, activation='none'))
         self.output = list()
     def forward(self, x: list[float, ]) -> list[float, ]:
         if len(x) != self.Layers[0].input_size:
@@ -143,8 +142,9 @@ def loss_func(y_pred: list[float, ], y_true: list[float, ]) -> float:
 
 if __name__ == '__main__':
     net = Network()
-    epochs = 10000
-    x = np.linspace(-np.pi, np.pi, 1000)
+    epochs = 1000
+    x = np.linspace(-np.pi, np.pi, 10000)
+    # y = 2 * x + 3
     y = np.sin(x)
     x = x.tolist()
     y = y.tolist()
@@ -156,8 +156,10 @@ if __name__ == '__main__':
         y0_pred = net.forward(x=x0)
         loss = loss_func(y_pred=y0_pred, y_true=y0)
         print(f'epoch: {epoch+1}/{epochs} | loss:', loss)
-        net.backward(y_true=y, lr=1e-5)
+        net.backward(y_true=y0, lr=1e-3)
     y_pred = list()
+    x = np.linspace(-np.pi, np.pi, 1000)
+    y = np.sin(x)
     for x0 in x:
         y_pred.append(net.forward(x=[x0]))
     plt.plot(x, y, label='True')

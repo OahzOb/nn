@@ -27,8 +27,9 @@ class Neuron:
         self.weight = weight
         self.bias = bias
         self.input = list()
-    def forward(self, x: list[float, ]) -> list[float]:
-        self.input = copy.deepcopy(x)
+    def forward(self, x: list[float, ], no_grad: bool = False) -> list[float]:
+        if not no_grad:
+            self.input = copy.deepcopy(x)
         y = 0
         for w, x0 in zip(self.weight, x):
             y += w * x0
@@ -55,14 +56,16 @@ class Layer:
         self.input_size = input_size
         self.output_size = output_size
         self.activation = activation
-    def forward(self, x: list[float, ]) -> list[float, ]:
+        self.output = list()
+    def forward(self, x: list[float, ], no_grad: bool = False) -> list[float, ]:
         if len(x) != self.input_size:
             raise ValueError("Dims not matched!")
         output = list()
         for neuron in self.neurons:
-            y = neuron.forward(x)
+            y = neuron.forward(x, no_grad=no_grad)
             output += y # output.append(y[0])
-        self.output = copy.deepcopy(output)
+        if not no_grad:
+            self.output = copy.deepcopy(output)
         if self.activation == 'ReLU':
             output_activated = list()
             for y in output:
@@ -108,25 +111,23 @@ class Layer:
 class Network:
     def __init__(self):
         self.Layers = list()
-        # self.Layers.append(Layer(input_size=1, output_size=64, activation='ReLU'))
-        # self.Layers.append(Layer(input_size=64, output_size=128, activation='ReLU'))
-        # self.Layers.append(Layer(input_size=128, output_size=1024, activation='ReLU'))
-        # self.Layers.append(Layer(input_size=1024, output_size=128, activation='Sigmoid'))
-        # self.Layers.append(Layer(input_size=128, output_size=1, activation='none'))
-        #
-        self.Layers.append(Layer(input_size=1, output_size=128, activation='ReLU'))
-        self.Layers.append(Layer(input_size=128, output_size=128, activation='ReLU'))
-        self.Layers.append(Layer(input_size=128, output_size=1, activation='none'))
+        self.Layers.append(Layer(input_size=1, output_size=32, activation='ReLU'))
+        self.Layers.append(Layer(input_size=32, output_size=32, activation='ReLU'))
+        self.Layers.append(Layer(input_size=32, output_size=1, activation='none'))
+
+        # self.Layers.append(Layer(input_size=1, output_size=256, activation='ReLU'))
+        # self.Layers.append(Layer(input_size=256, output_size=1, activation='none'))
         self.output = list()
-    def forward(self, x: list[float, ]) -> list[float, ]:
+    def forward(self, x: list[float, ], no_grad: bool = False) -> list[float, ]:
         if len(x) != self.Layers[0].input_size:
             raise ValueError("Dims not matched!")
         for layer in self.Layers:
-            y = layer.forward(x)
+            y = layer.forward(x, no_grad=no_grad)
             # print(y)
             x = copy.deepcopy(y)
         output = y
-        self.output = copy.deepcopy(output)
+        if not no_grad:
+            self.output = copy.deepcopy(output)
         return output
     def backward(self, y_true: list[float, ], lr: float = 1e-6) -> None:
         dLdas = [yp - yt for yp, yt in zip(self.output, y_true)]
@@ -139,30 +140,48 @@ def loss_func(y_pred: list[float, ], y_true: list[float, ]) -> float:
     loss = sum(losses) / len(y_pred)
     return loss
 
+def f(x):
+    y=np.sin(x)
+    return y
 
 if __name__ == '__main__':
     net = Network()
-    epochs = 1000
+    epochs = 2000
     x = np.linspace(-np.pi, np.pi, 10000)
+    x_test = np.linspace(-np.pi, np.pi, 100)
     # y = 2 * x + 3
-    y = np.sin(x)
+    y = f(x)
+    y_test = f(x_test)
     x = x.tolist()
-    y = y.tolist()
+    x_test = x_test.tolist()
+    y_test = y_test.tolist()
     indices = list(range(len(x)))
+    losses = list()
     for epoch in range(epochs):
         idx = random.choice(indices)
         x0 = [x[idx]]
         y0 = [y[idx]]
         y0_pred = net.forward(x=x0)
         loss = loss_func(y_pred=y0_pred, y_true=y0)
-        print(f'epoch: {epoch+1}/{epochs} | loss:', loss)
+        loss_all = [loss_func(net.forward([x_test[i]], no_grad=True), [y_test[i]]) for i in range(len(x_test))]
+        loss_mean = np.mean(loss_all)
+        losses.append(loss_mean)
+        # losses.append(loss)
+        print(f'epoch: {epoch+1}/{epochs} | loss:', loss_mean)
+        # print(f'epoch: {epoch+1}/{epochs} | loss:', loss)
         net.backward(y_true=y0, lr=1e-3)
     y_pred = list()
-    x = np.linspace(-np.pi, np.pi, 1000)
-    y = np.sin(x)
+    x = np.linspace(-np.pi, np.pi, 100)
+    y = f(x)
     for x0 in x:
         y_pred.append(net.forward(x=[x0]))
-    plt.plot(x, y, label='True')
+    plt.plot(x, y, label='True', linestyle='--')
     plt.plot(x, y_pred, label='Prediction')
+    plt.legend()
+    plt.show()
+    plt.plot(list(range(1, epochs+1)), losses, label='Loss curve')
+    plt.legend()
+    plt.show()
+    plt.plot(list(range(epochs-1000+1, epochs+1)), losses[-1000:], label='Loss curve (last 1000 epochs)')
     plt.legend()
     plt.show()

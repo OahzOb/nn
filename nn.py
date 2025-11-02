@@ -36,13 +36,13 @@ class Neuron:
         y += self.bias
         return [y]
     def backward(self, grad: float, lr: float = 1e-6) -> list[float, ]:
+        grad = min(1e3, grad)
+        grad = max(-1e3, grad)
         weight_new = list()
         weight_origin = copy.deepcopy(self.weight)
         for x, w in zip(self.input, self.weight):
             weight_new.append(w - lr * grad * x)
         self.weight = copy.deepcopy(weight_new)
-        grad = min(1e2, grad)
-        grad = max(-1e2, grad)
         self.bias -= lr * grad
         return weight_origin
 

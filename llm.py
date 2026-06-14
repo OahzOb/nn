@@ -24,7 +24,7 @@ class ChineseTokenizer:
         return ch_list
 
 
-def _llm():
+def _llm_forward():
     print('-' * 10, 'LLM forward 1 batch', '-' * 10)
     def _check_dim(mtx: list) -> list:
         dims = [len(mtx)]
@@ -135,6 +135,8 @@ def _llm():
     # dropout -----
     attn_out_transposed = [[0 if random.random() < dropout_rate else attn_elem for attn_elem in attn_vec]
                            for attn_vec in attn_out_transposed]
+    # residual connection -----
+    input_attn = [[e1 + e2 for e1, e2 in zip(v1, v2)] for v1, v2 in zip(input_embed_norm, attn_out_transposed)]
     # ffn -----
     ffn_size = 16
     ffn_w1 = [[random.random() for _ in range(hidden_size)] for _ in range(ffn_size)]
@@ -143,20 +145,20 @@ def _llm():
     w1_out = list()
     for w1_vec in ffn_w1:
         w1_out_vec = list()
-        for input_vec in input_embed_norm:
+        for input_vec in input_attn:
             ffn_elem = sum([w1_elem * input_elem for w1_elem, input_elem in zip(w1_vec, input_vec)])
             w1_out_vec.append(ffn_elem)
         w1_out.append(w1_out_vec)
     w3_out = list()
     for w3_vec in ffn_w3:
         w3_out_vec = list()
-        for input_vec in input_embed_norm:
+        for input_vec in input_attn:
             ffn_elem = sum([w1_elem * input_elem for w1_elem, input_elem in zip(w3_vec, input_vec)])
             w3_out_vec.append(ffn_elem)
         w3_out.append(w3_out_vec)
-    w1_w3 = [[w1_elem * w3_elem for w1_elem, w3_elem in zip(w1_vec, w3_vec)] for w1_vec, w3_vec in zip(w1_out, w3_out)]
-    w1_w3_activated = [[0 if elem < 0 else elem for elem in vec] for vec in w1_w3]
-    w13_transposed = _transpose(w1_w3_activated)
+    w1_activated = [[0 if elem < 0 else elem for elem in vec] for vec in w1_out]
+    w1_w3 = [[w1_elem * w3_elem for w1_elem, w3_elem in zip(w1_vec, w3_vec)] for w1_vec, w3_vec in zip(w1_activated, w3_out)]
+    w13_transposed = _transpose(w1_w3)
     ffn_out = list()
     for w13_vec in w13_transposed:
         ffn_vec = list()
@@ -164,10 +166,7 @@ def _llm():
             ffn_elem = sum([w13_elem * w2_elem for w13_elem, w2_elem in zip(w13_vec, w2_vec)])
             ffn_vec.append(ffn_elem)
         ffn_out.append(ffn_vec)
-    ffn_out = [[0 if elem < 0 else elem for elem in vec] for vec in ffn_out]
-    # residual connection -----
-    input_attn = [[e1 + e2 for e1, e2 in zip(v1, v2)] for v1, v2 in zip(input_embed_norm, attn_out_transposed)]
-    # transformer combine
+    # transformer combine -----
     transformer_out = [[e1 + e2 for e1, e2 in zip(v1, v2)] for v1, v2 in zip(input_attn, ffn_out)]
     # norm -----
     trans_out_norm = list()
@@ -222,4 +221,4 @@ def _llm():
     print(f"Final output string: {output_string}")
 
 if __name__ == '__main__':
-    _llm()
+    _llm_forward()

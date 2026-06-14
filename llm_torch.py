@@ -363,7 +363,7 @@ model_cfg = dict(
 train_cfg = dict(
     batch_size=32,
     learning_rate=3e-3,
-    epochs=5000,
+    epochs=500,
     eval_interval=500,
     grad_clip=1.0,
 )
